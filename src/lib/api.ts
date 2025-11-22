@@ -73,57 +73,37 @@ export async function dismissSuggestion(id: string): Promise<void> {
   });
 }
 
-export async function fetchChatHistory(): Promise<ChatMessage[]> {
-  const { data, error } = await supabase
-    .from('chat_messages')
-    .select('*')
-    .order('timestamp', { ascending: true });
+export async function fetchChatHistory(limit = 50): Promise<ChatMessage[]> {
+  const rows = (await sbFetch(
+    `/chat_messages?select=*&order=id.asc&limit=${limit}`
+  )) as any[];
 
-  if (error) {
-    console.error('Error fetching chat history:', error);
-    throw error;
-  }
-
-  return (data || []).map(msg => ({
-    id: msg.id,
-    role: msg.role as ChatMessage['role'],
-    text: msg.text,
-    timestamp: msg.timestamp,
+  return rows.map((row) => ({
+    id: row.id,
+    role: row.role,
+    text: row.text,
+    timestamp: row.timestamp,
   }));
 }
 
 export async function sendChatMessage(text: string): Promise<ChatMessage> {
-  // Insert user message
-  const { data: userData, error: userError } = await supabase
-    .from('chat_messages')
-    .insert({
-      role: 'user',
-      text,
-      timestamp: new Date().toISOString(),
-    })
-    .select()
-    .single();
+  const payload = {
+    role: "user",
+    text,
+    timestamp: new Date().toISOString(),
+  };
 
-  if (userError) {
-    console.error('Error sending chat message:', userError);
-    throw userError;
-  }
+  const rows = (await sbFetch("/chat_messages", {
+    method: "POST",
+    body: JSON.stringify(payload),
+    headers: { Prefer: "return=representation" },
+  })) as any[];
 
-  // Insert mock agent response
-  const agentText = `Sure, here's what I found: "${text}" - This is a simulated response. In production, I'll provide intelligent security analysis.`;
-  
-  await supabase
-    .from('chat_messages')
-    .insert({
-      role: 'agent',
-      text: agentText,
-      timestamp: new Date(Date.now() + 1000).toISOString(),
-    });
-
+  const row = rows[0];
   return {
-    id: userData.id,
-    role: userData.role as ChatMessage['role'],
-    text: userData.text,
-    timestamp: userData.timestamp,
+    id: row.id,
+    role: row.role,
+    text: row.text,
+    timestamp: row.timestamp,
   };
 }

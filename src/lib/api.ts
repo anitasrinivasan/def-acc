@@ -58,27 +58,19 @@ export async function fetchSuggestions(ip?: string): Promise<Suggestion[]> {
 }
 
 export async function executeSuggestion(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('suggestions')
-    .update({ status: 'executed', updated_at: new Date().toISOString() })
-    .eq('id', id);
-
-  if (error) {
-    console.error('Error executing suggestion:', error);
-    throw error;
-  }
+  await sbFetch(`/suggestions?id=eq.${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status: "executed" }),
+    headers: { Prefer: "return=minimal" },
+  });
 }
 
 export async function dismissSuggestion(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('suggestions')
-    .update({ status: 'dismissed', updated_at: new Date().toISOString() })
-    .eq('id', id);
-
-  if (error) {
-    console.error('Error dismissing suggestion:', error);
-    throw error;
-  }
+  await sbFetch(`/suggestions?id=eq.${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status: "dismissed" }),
+    headers: { Prefer: "return=minimal" },
+  });
 }
 
 export async function fetchChatHistory(): Promise<ChatMessage[]> {

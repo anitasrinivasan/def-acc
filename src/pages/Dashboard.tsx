@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Circle, Terminal, AlertTriangle, Play, X, Search } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { toast } from "sonner";
 import { HostState, Suggestion, Tier } from "@/types";
 import { formatDistanceToNow } from "date-fns";
@@ -112,10 +112,12 @@ export default function Dashboard() {
     return filteredSuggestions.filter((s) => s.ip === selectedHost);
   }, [selectedHost, filteredSuggestions]);
 
-  // Auto-select first host
-  if (filteredHosts.length > 0 && !selectedHost) {
-    setSelectedHost(filteredHosts[0].ip);
-  }
+  // Auto-select first host when hosts load
+  useEffect(() => {
+    if (filteredHosts.length > 0 && !selectedHost) {
+      setSelectedHost(filteredHosts[0].ip);
+    }
+  }, [filteredHosts, selectedHost]);
 
   if (hostsLoading || suggestionsLoading) {
     return (

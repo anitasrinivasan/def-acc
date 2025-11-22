@@ -68,19 +68,21 @@ All colors MUST be HSL.
 
   /* React Flow Controls styling */
   .react-flow__controls {
-    @apply shadow-lg;
+    background-color: hsl(var(--card)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    box-shadow: 0 10px 30px hsl(var(--background) / 0.8);
   }
 
   .react-flow__controls-button {
-    @apply bg-card border-border text-foreground;
-    @apply hover:bg-muted transition-colors;
+    background-color: transparent !important;
+    border-color: hsl(var(--border)) !important;
   }
 
   .react-flow__controls-button:hover {
-    @apply bg-primary/20;
+    background-color: hsl(var(--muted)) !important;
   }
 
   .react-flow__controls-button svg {
-    @apply fill-foreground;
+    stroke: hsl(var(--foreground)) !important;
   }
 }

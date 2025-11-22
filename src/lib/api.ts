@@ -1,169 +1,134 @@
-// Mock API layer - ready to swap with real backend endpoints
-import { HostState, Suggestion, ChatMessage } from "@/types";
+// Supabase API layer for Slipstream
+import { supabase } from "@/integrations/supabase";
+import { HostState, Suggestion, ChatMessage, Dependency, SuggestionDependency } from "@/types";
 
-const API_BASE = "/api"; // Update this when connecting to real backend
-
-// Mock data for development
-const mockHosts: HostState[] = [
-  {
-    ip: "10.0.1.100",
-    label: "WEB-SERVER",
-    tier: "web",
-    status: "online",
-    lastSeen: new Date().toISOString(),
-    dependencies: [{ targetIp: "10.0.1.200", service: "DB" }],
-    state: {
-      services: {
-        IIS: { version: "10.0", notes: "example only" },
-        flask: { debug: false, port: 5000 }
-      },
-      users: {
-        admins: ["alice", "bob"],
-        regular: ["charlie"]
-      }
-    },
-  },
-  {
-    ip: "10.0.1.200",
-    label: "DB-SERVER",
-    tier: "db",
-    status: "online",
-    lastSeen: new Date().toISOString(),
-    dependencies: [],
-    state: { cpu: 55, memory: 89, connections: 67, queries: 1240 },
-  },
-  {
-    ip: "10.0.1.50",
-    label: "FTP-SERVER",
-    tier: "other",
-    status: "online",
-    lastSeen: new Date().toISOString(),
-    dependencies: [],
-    state: { cpu: 12, memory: 35, activeSessions: 8 },
-  },
-];
-
-const mockSuggestions: Suggestion[] = [
-  {
-    id: "1",
-    ip: "10.0.1.100",
-    title: "Suspicious IIS configuration detected",
-    description: "Web server running IIS 10.0 with potentially insecure settings. Review configuration and apply hardening guidelines.",
-    severity: 7,
-    suggestedCommand: "Get-WebConfiguration -Filter /system.webServer/security",
-    createdAt: new Date(Date.now() - 1800000).toISOString(),
-    status: "open",
-    dependencies: [
-      { targetSuggestionId: "2", relation: "enables" }
-    ],
-  },
-  {
-    id: "2",
-    ip: "10.0.1.200",
-    title: "Memory usage approaching limit",
-    description: "Database server memory at 89%. May cause performance degradation or OOM errors.",
-    severity: 8,
-    suggestedCommand: "free -h && cat /proc/meminfo",
-    createdAt: new Date(Date.now() - 3600000).toISOString(),
-    status: "open",
-    dependencies: [
-      { targetSuggestionId: "3", relation: "worsens" }
-    ],
-  },
-  {
-    id: "3",
-    ip: "10.0.1.50",
-    title: "FTP service running with weak encryption",
-    description: "FTP server detected without TLS/SSL encryption. User credentials may be transmitted in cleartext.",
-    severity: 9,
-    suggestedCommand: "netstat -an | grep :21 && cat /etc/vsftpd/vsftpd.conf",
-    createdAt: new Date(Date.now() - 7200000).toISOString(),
-    status: "open",
-  },
-  {
-    id: "4",
-    ip: "10.0.1.100",
-    title: "Flask debug mode enabled",
-    description: "Flask application running with debug=true in production. This exposes sensitive information and allows code execution.",
-    severity: 10,
-    suggestedCommand: "grep -r 'debug.*True' /var/www/flask/",
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-    status: "open",
-  },
-];
-
-let chatHistory: ChatMessage[] = [
-  {
-    id: "1",
-    role: "system",
-    text: "Slipstream security agent initialized. Monitoring 3 hosts across 3 tiers.",
-    timestamp: new Date(Date.now() - 3600000).toISOString(),
-  },
-  {
-    id: "2",
-    role: "agent",
-    text: "Hello! I'm monitoring your infrastructure. Currently tracking 3 open security suggestions. How can I assist you?",
-    timestamp: new Date(Date.now() - 3500000).toISOString(),
-  },
-];
-
-// Simulated network delay
-const delay = (ms: number = 300) => new Promise(resolve => setTimeout(resolve, ms));
-
-// API functions matching your specifications
 export async function fetchState(): Promise<HostState[]> {
-  await delay();
-  return mockHosts;
+  const { data, error } = await supabase
+    .from('hosts')
+    .select('*')
+    .order('ip');
+
+  if (error) {
+    console.error('Error fetching hosts:', error);
+    throw error;
+  }
+
+  return (data || []).map(host => ({
+    ip: host.ip,
+    label: host.label || undefined,
+    tier: host.tier as HostState['tier'],
+    status: host.status as HostState['status'],
+    lastSeen: host.last_seen || undefined,
+    dependencies: (host.dependencies as Dependency[]) || [],
+    state: (host.state_json as Record<string, any>) || {},
+  }));
 }
 
 export async function fetchSuggestions(ip?: string): Promise<Suggestion[]> {
-  await delay();
+  let query = supabase
+    .from('suggestions')
+    .select('*')
+    .order('created_at', { ascending: false });
+
   if (ip) {
-    return mockSuggestions.filter(s => s.ip === ip);
+    query = query.eq('ip', ip);
   }
-  return mockSuggestions;
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error('Error fetching suggestions:', error);
+    throw error;
+  }
+
+  return (data || []).map(suggestion => ({
+    id: suggestion.id,
+    ip: suggestion.ip,
+    title: suggestion.title,
+    description: suggestion.description || '',
+    severity: suggestion.severity || 0,
+    suggestedCommand: suggestion.suggested_command || undefined,
+    createdAt: suggestion.created_at,
+    status: suggestion.status as Suggestion['status'],
+    dependencies: (suggestion.dependencies as SuggestionDependency[]) || [],
+  }));
 }
 
 export async function executeSuggestion(id: string): Promise<void> {
-  await delay();
-  const suggestion = mockSuggestions.find(s => s.id === id);
-  if (!suggestion) throw new Error("Suggestion not found");
-  suggestion.status = "executed";
+  const { error } = await supabase
+    .from('suggestions')
+    .update({ status: 'executed', updated_at: new Date().toISOString() })
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error executing suggestion:', error);
+    throw error;
+  }
 }
 
 export async function dismissSuggestion(id: string): Promise<void> {
-  await delay();
-  const suggestion = mockSuggestions.find(s => s.id === id);
-  if (!suggestion) throw new Error("Suggestion not found");
-  suggestion.status = "dismissed";
+  const { error } = await supabase
+    .from('suggestions')
+    .update({ status: 'dismissed', updated_at: new Date().toISOString() })
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error dismissing suggestion:', error);
+    throw error;
+  }
 }
 
 export async function fetchChatHistory(): Promise<ChatMessage[]> {
-  await delay();
-  return chatHistory;
+  const { data, error } = await supabase
+    .from('chat_messages')
+    .select('*')
+    .order('timestamp', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching chat history:', error);
+    throw error;
+  }
+
+  return (data || []).map(msg => ({
+    id: msg.id,
+    role: msg.role as ChatMessage['role'],
+    text: msg.text,
+    timestamp: msg.timestamp,
+  }));
 }
 
 export async function sendChatMessage(text: string): Promise<ChatMessage> {
-  await delay(500);
+  // Insert user message
+  const { data: userData, error: userError } = await supabase
+    .from('chat_messages')
+    .insert({
+      role: 'user',
+      text,
+      timestamp: new Date().toISOString(),
+    })
+    .select()
+    .single();
+
+  if (userError) {
+    console.error('Error sending chat message:', userError);
+    throw userError;
+  }
+
+  // Insert mock agent response
+  const agentText = `Sure, here's what I found: "${text}" - This is a simulated response. In production, I'll provide intelligent security analysis.`;
   
-  const userMessage: ChatMessage = {
-    id: String(Date.now()),
-    role: "user",
-    text,
-    timestamp: new Date().toISOString(),
+  await supabase
+    .from('chat_messages')
+    .insert({
+      role: 'agent',
+      text: agentText,
+      timestamp: new Date(Date.now() + 1000).toISOString(),
+    });
+
+  return {
+    id: userData.id,
+    role: userData.role as ChatMessage['role'],
+    text: userData.text,
+    timestamp: userData.timestamp,
   };
-  
-  chatHistory.push(userMessage);
-  
-  // Mock agent response
-  const agentMessage: ChatMessage = {
-    id: String(Date.now() + 1),
-    role: "agent",
-    text: `Sure, here's what I found: "${text}" - This is a simulated response. In production, I'll provide intelligent security analysis.`,
-    timestamp: new Date(Date.now() + 1000).toISOString(),
-  };
-  
-  chatHistory.push(agentMessage);
-  
-  return userMessage;
 }

@@ -60,6 +60,9 @@ const mockSuggestions: Suggestion[] = [
     suggestedCommand: "top -bn1 | grep 'Cpu(s)' && ps aux --sort=-%cpu | head -10",
     createdAt: new Date(Date.now() - 1800000).toISOString(),
     status: "open",
+    dependencies: [
+      { targetSuggestionId: "2", relation: "enables" }
+    ],
   },
   {
     id: "2",
@@ -70,6 +73,9 @@ const mockSuggestions: Suggestion[] = [
     suggestedCommand: "free -h && cat /proc/meminfo",
     createdAt: new Date(Date.now() - 3600000).toISOString(),
     status: "open",
+    dependencies: [
+      { targetSuggestionId: "3", relation: "worsens" }
+    ],
   },
   {
     id: "3",

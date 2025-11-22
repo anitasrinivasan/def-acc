@@ -24,24 +24,16 @@ async function sbFetch(path: string, options: RequestInit = {}) {
 }
 
 export async function fetchState(): Promise<HostState[]> {
-  const { data, error } = await supabase
-    .from('hosts')
-    .select('*')
-    .order('ip');
+  const rows = (await sbFetch("/hosts?select=*")) as any[];
 
-  if (error) {
-    console.error('Error fetching hosts:', error);
-    throw error;
-  }
-
-  return (data || []).map(host => ({
-    ip: host.ip,
-    label: host.label || undefined,
-    tier: host.tier as HostState['tier'],
-    status: host.status as HostState['status'],
-    lastSeen: host.last_seen || undefined,
-    dependencies: (host.dependencies as Dependency[]) || [],
-    state: (host.state_json as Record<string, any>) || {},
+  return rows.map((row) => ({
+    ip: row.ip,
+    label: row.label ?? undefined,
+    tier: row.tier ?? undefined,
+    status: row.status ?? undefined,
+    lastSeen: row.last_seen ?? undefined,
+    state: row.state_json || {},
+    // we can later derive dependencies from state if we store them there
   }));
 }
 

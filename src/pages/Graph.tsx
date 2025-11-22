@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchSuggestions, fetchState } from "@/lib/api";
 import { Suggestion, HostState } from "@/types";
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
 import { ReactFlow, Node, Edge, Background, Controls, MiniMap, useNodesState, useEdgesState, MarkerType } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { Card } from "@/components/ui/card";
@@ -137,6 +137,12 @@ export default function Graph() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
+  // Update nodes and edges when data loads
+  useEffect(() => {
+    setNodes(initialNodes);
+    setEdges(initialEdges);
+  }, [initialNodes, initialEdges, setNodes, setEdges]);
+
   const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
     const suggestionData = node.data as { label: React.ReactNode; suggestion: Suggestion };
     setSelectedSuggestion(suggestionData.suggestion);
@@ -217,6 +223,12 @@ export default function Graph() {
 
   const [networkNodes, setNetworkNodes, onNetworkNodesChange] = useNodesState(networkInitialNodes);
   const [networkEdges, setNetworkEdges, onNetworkEdgesChange] = useEdgesState(networkInitialEdges);
+
+  // Update network nodes and edges when data loads
+  useEffect(() => {
+    setNetworkNodes(networkInitialNodes);
+    setNetworkEdges(networkInitialEdges);
+  }, [networkInitialNodes, networkInitialEdges, setNetworkNodes, setNetworkEdges]);
 
   const onNetworkNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
     const hostData = node.data as { label: React.ReactNode; host: HostState };

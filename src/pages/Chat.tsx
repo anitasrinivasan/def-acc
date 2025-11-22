@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { fetchChatHistory, sendChatMessage } from "@/lib/api";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,11 +26,11 @@ export default function Chat() {
 
   const { data: messages } = useQuery({
     queryKey: ["chat"],
-    queryFn: api.getChatHistory,
+    queryFn: fetchChatHistory,
   });
 
   const sendMutation = useMutation({
-    mutationFn: api.sendChatMessage,
+    mutationFn: sendChatMessage,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["chat"] });
       setInput("");

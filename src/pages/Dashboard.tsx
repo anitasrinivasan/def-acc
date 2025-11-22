@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { fetchState, fetchSuggestions } from "@/lib/api";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Server, Circle, Network } from "lucide-react";
@@ -24,12 +24,12 @@ const tierColors: Record<Tier, string> = {
 export default function Dashboard() {
   const { data: hosts, isLoading } = useQuery({
     queryKey: ["hosts"],
-    queryFn: api.getHosts,
+    queryFn: fetchState,
   });
 
   const { data: suggestions } = useQuery({
     queryKey: ["suggestions"],
-    queryFn: () => api.getSuggestions({ status: "open" }),
+    queryFn: () => fetchSuggestions(),
   });
 
   const openSuggestions = suggestions?.filter(s => s.status === "open").length || 0;

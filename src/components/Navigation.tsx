@@ -1,5 +1,5 @@
 import { NavLink } from "@/components/NavLink";
-import { Shield, Activity, MessageSquare } from "lucide-react";
+import { Shield, Activity, Network, MessageSquare } from "lucide-react";
 
 export const Navigation = () => {
   return (
@@ -23,12 +23,12 @@ export const Navigation = () => {
               </NavLink>
               
               <NavLink
-                to="/suggestions"
+                to="/graph"
                 className="flex items-center gap-2 px-4 py-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
                 activeClassName="!text-primary !bg-secondary"
               >
-                <Shield className="h-4 w-4" />
-                Suggestions
+                <Network className="h-4 w-4" />
+                Graph
               </NavLink>
               
               <NavLink

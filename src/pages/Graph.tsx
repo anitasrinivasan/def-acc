@@ -264,8 +264,9 @@ export default function Graph() {
         </div>
 
         <TabsContent value="vulnerabilities" className="flex-1 m-0 flex">
-          <div className="flex-1 relative">
+          <div className="flex-1 relative h-full">
             <ReactFlow
+              style={{ width: "100%", height: "100%" }}
               nodes={nodes}
               edges={edges}
               onNodesChange={onNodesChange}
@@ -361,8 +362,9 @@ export default function Graph() {
         </TabsContent>
 
         <TabsContent value="network" className="flex-1 m-0 flex">
-          <div className="flex-1 relative">
+          <div className="flex-1 relative h-full">
             <ReactFlow
+              style={{ width: "100%", height: "100%" }}
               nodes={networkNodes}
               edges={networkEdges}
               onNodesChange={onNetworkNodesChange}

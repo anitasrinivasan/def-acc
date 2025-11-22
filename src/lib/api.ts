@@ -1,5 +1,5 @@
 // Mock API layer - ready to swap with real backend endpoints
-import { HostState, Suggestion, ChatMessage, SuggestionStatus } from "@/types";
+import { HostState, Suggestion, ChatMessage } from "@/types";
 
 const API_BASE = "/api"; // Update this when connecting to real backend
 
@@ -111,69 +111,60 @@ let chatHistory: ChatMessage[] = [
 // Simulated network delay
 const delay = (ms: number = 300) => new Promise(resolve => setTimeout(resolve, ms));
 
-export const api = {
-  async getHosts(): Promise<HostState[]> {
-    await delay();
-    return mockHosts;
-  },
+// API functions matching your specifications
+export async function fetchState(): Promise<HostState[]> {
+  await delay();
+  return mockHosts;
+}
 
-  async getSuggestions(filters?: { ip?: string; status?: SuggestionStatus }): Promise<Suggestion[]> {
-    await delay();
-    let filtered = [...mockSuggestions];
-    
-    if (filters?.ip) {
-      filtered = filtered.filter(s => s.ip === filters.ip);
-    }
-    if (filters?.status) {
-      filtered = filtered.filter(s => s.status === filters.status);
-    }
-    
-    return filtered;
-  },
+export async function fetchSuggestions(ip?: string): Promise<Suggestion[]> {
+  await delay();
+  if (ip) {
+    return mockSuggestions.filter(s => s.ip === ip);
+  }
+  return mockSuggestions;
+}
 
-  async executeSuggestion(id: string): Promise<Suggestion> {
-    await delay();
-    const suggestion = mockSuggestions.find(s => s.id === id);
-    if (!suggestion) throw new Error("Suggestion not found");
-    suggestion.status = "executed";
-    return suggestion;
-  },
+export async function executeSuggestion(id: string): Promise<void> {
+  await delay();
+  const suggestion = mockSuggestions.find(s => s.id === id);
+  if (!suggestion) throw new Error("Suggestion not found");
+  suggestion.status = "executed";
+}
 
-  async dismissSuggestion(id: string): Promise<Suggestion> {
-    await delay();
-    const suggestion = mockSuggestions.find(s => s.id === id);
-    if (!suggestion) throw new Error("Suggestion not found");
-    suggestion.status = "dismissed";
-    return suggestion;
-  },
+export async function dismissSuggestion(id: string): Promise<void> {
+  await delay();
+  const suggestion = mockSuggestions.find(s => s.id === id);
+  if (!suggestion) throw new Error("Suggestion not found");
+  suggestion.status = "dismissed";
+}
 
-  async getChatHistory(): Promise<ChatMessage[]> {
-    await delay();
-    return chatHistory;
-  },
+export async function fetchChatHistory(): Promise<ChatMessage[]> {
+  await delay();
+  return chatHistory;
+}
 
-  async sendChatMessage(text: string): Promise<ChatMessage> {
-    await delay(500);
-    
-    const userMessage: ChatMessage = {
-      id: String(Date.now()),
-      role: "user",
-      text,
-      timestamp: new Date().toISOString(),
-    };
-    
-    chatHistory.push(userMessage);
-    
-    // Mock agent response
-    const agentMessage: ChatMessage = {
-      id: String(Date.now() + 1),
-      role: "agent",
-      text: `I've received your message: "${text}". This is a mock response. In production, I'll provide intelligent analysis and recommendations.`,
-      timestamp: new Date(Date.now() + 1000).toISOString(),
-    };
-    
-    chatHistory.push(agentMessage);
-    
-    return userMessage;
-  },
-};
+export async function sendChatMessage(text: string): Promise<ChatMessage> {
+  await delay(500);
+  
+  const userMessage: ChatMessage = {
+    id: String(Date.now()),
+    role: "user",
+    text,
+    timestamp: new Date().toISOString(),
+  };
+  
+  chatHistory.push(userMessage);
+  
+  // Mock agent response
+  const agentMessage: ChatMessage = {
+    id: String(Date.now() + 1),
+    role: "agent",
+    text: `Sure, here's what I found: "${text}" - This is a simulated response. In production, I'll provide intelligent security analysis.`,
+    timestamp: new Date(Date.now() + 1000).toISOString(),
+  };
+  
+  chatHistory.push(agentMessage);
+  
+  return userMessage;
+}

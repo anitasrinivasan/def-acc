@@ -46,11 +46,11 @@ const mockHosts: HostState[] = [
 const mockSuggestions: Suggestion[] = [
   {
     id: "1",
-    ip: "10.0.3.10",
-    title: "High CPU usage detected",
-    description: "CPU usage has exceeded 70% for more than 15 minutes. Consider scaling or investigating runaway processes.",
+    ip: "10.0.1.100",
+    title: "Suspicious IIS configuration detected",
+    description: "Web server running IIS 10.0 with potentially insecure settings. Review configuration and apply hardening guidelines.",
     severity: 7,
-    suggestedCommand: "top -bn1 | grep 'Cpu(s)' && ps aux --sort=-%cpu | head -10",
+    suggestedCommand: "Get-WebConfiguration -Filter /system.webServer/security",
     createdAt: new Date(Date.now() - 1800000).toISOString(),
     status: "open",
     dependencies: [
@@ -59,7 +59,7 @@ const mockSuggestions: Suggestion[] = [
   },
   {
     id: "2",
-    ip: "10.0.4.10",
+    ip: "10.0.1.200",
     title: "Memory usage approaching limit",
     description: "Database server memory at 89%. May cause performance degradation or OOM errors.",
     severity: 8,
@@ -72,23 +72,23 @@ const mockSuggestions: Suggestion[] = [
   },
   {
     id: "3",
-    ip: "10.0.5.20",
-    title: "Host offline",
-    description: "WEB-02 has been offline for over 1 hour. Check network connectivity and service status.",
+    ip: "10.0.1.50",
+    title: "FTP service running with weak encryption",
+    description: "FTP server detected without TLS/SSL encryption. User credentials may be transmitted in cleartext.",
     severity: 9,
-    suggestedCommand: "ping 10.0.5.20 && ssh admin@10.0.5.20 'systemctl status'",
+    suggestedCommand: "netstat -an | grep :21 && cat /etc/vsftpd/vsftpd.conf",
     createdAt: new Date(Date.now() - 7200000).toISOString(),
     status: "open",
   },
   {
     id: "4",
-    ip: "10.0.1.10",
-    title: "Security patch available",
-    description: "Critical security updates available for DC-PRIMARY. Schedule maintenance window.",
-    severity: 6,
-    suggestedCommand: "apt update && apt list --upgradable",
+    ip: "10.0.1.100",
+    title: "Flask debug mode enabled",
+    description: "Flask application running with debug=true in production. This exposes sensitive information and allows code execution.",
+    severity: 10,
+    suggestedCommand: "grep -r 'debug.*True' /var/www/flask/",
     createdAt: new Date(Date.now() - 86400000).toISOString(),
-    status: "executed",
+    status: "open",
   },
 ];
 
@@ -96,7 +96,7 @@ let chatHistory: ChatMessage[] = [
   {
     id: "1",
     role: "system",
-    text: "Splitstream security agent initialized. Monitoring 5 hosts across 4 tiers.",
+    text: "Slipstream security agent initialized. Monitoring 3 hosts across 3 tiers.",
     timestamp: new Date(Date.now() - 3600000).toISOString(),
   },
   {

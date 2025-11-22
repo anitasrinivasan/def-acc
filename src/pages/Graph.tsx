@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchSuggestions } from "@/lib/api";
-import { Suggestion } from "@/types";
+import { fetchSuggestions, fetchState } from "@/lib/api";
+import { Suggestion, HostState } from "@/types";
 import { useMemo, useState, useCallback } from "react";
 import { ReactFlow, Node, Edge, Background, Controls, MiniMap, useNodesState, useEdgesState, MarkerType } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
@@ -31,13 +31,42 @@ const getRelationColor = (relation: string) => {
   }
 };
 
+const getTierColor = (tier?: string) => {
+  switch (tier) {
+    case "dc": return "hsl(var(--chart-1))";
+    case "web": return "hsl(var(--chart-2))";
+    case "app": return "hsl(var(--chart-3))";
+    case "db": return "hsl(var(--chart-4))";
+    case "other": return "hsl(var(--chart-5))";
+    default: return "hsl(var(--muted))";
+  }
+};
+
+const getTierBadge = (tier?: string) => {
+  const tierUpper = tier?.toUpperCase() || "N/A";
+  switch (tier) {
+    case "dc": return { label: tierUpper, class: "bg-chart-1 text-chart-1-foreground" };
+    case "web": return { label: tierUpper, class: "bg-chart-2 text-chart-2-foreground" };
+    case "app": return { label: tierUpper, class: "bg-chart-3 text-chart-3-foreground" };
+    case "db": return { label: tierUpper, class: "bg-chart-4 text-chart-4-foreground" };
+    case "other": return { label: tierUpper, class: "bg-chart-5 text-chart-5-foreground" };
+    default: return { label: tierUpper, class: "bg-muted text-muted-foreground" };
+  }
+};
+
 export default function Graph() {
-  const { data: suggestions = [], isLoading } = useQuery({
+  const { data: suggestions = [], isLoading: isLoadingSuggestions } = useQuery({
     queryKey: ["suggestions"],
     queryFn: () => fetchSuggestions(),
   });
 
+  const { data: hosts = [], isLoading: isLoadingHosts } = useQuery({
+    queryKey: ["hosts"],
+    queryFn: () => fetchState(),
+  });
+
   const [selectedSuggestion, setSelectedSuggestion] = useState<Suggestion | null>(null);
+  const [selectedHost, setSelectedHost] = useState<HostState | null>(null);
 
   const { nodes: initialNodes, edges: initialEdges } = useMemo(() => {
     const nodes: Node[] = suggestions.map((suggestion, index) => ({
@@ -113,10 +142,91 @@ export default function Graph() {
     setSelectedSuggestion(suggestionData.suggestion);
   }, []);
 
-  if (isLoading) {
+  // Network graph data
+  const { nodes: networkInitialNodes, edges: networkInitialEdges } = useMemo(() => {
+    const nodes: Node[] = hosts.map((host, index) => ({
+      id: host.ip,
+      position: { x: (index % 3) * 350, y: Math.floor(index / 3) * 200 },
+      data: {
+        label: (
+          <div className="p-3 space-y-2 min-w-[280px]">
+            <div className="flex items-start justify-between gap-2">
+              <div className="font-semibold text-sm leading-tight flex-1">
+                {host.label || host.ip}
+              </div>
+              <Badge className={getTierBadge(host.tier).class}>
+                {getTierBadge(host.tier).label}
+              </Badge>
+            </div>
+            <div className="flex gap-2 text-xs text-muted-foreground">
+              <span>{host.ip}</span>
+              {host.status && (
+                <>
+                  <span>•</span>
+                  <span className={host.status === "online" ? "text-green-500" : "text-destructive"}>
+                    {host.status}
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+        ),
+        host,
+      } as { label: React.ReactNode; host: HostState },
+      style: {
+        background: "hsl(var(--card))",
+        border: `2px solid ${getTierColor(host.tier)}`,
+        borderRadius: "8px",
+        padding: 0,
+        width: "auto",
+      },
+    }));
+
+    const edges: Edge[] = [];
+    hosts.forEach((host) => {
+      if (host.dependencies) {
+        host.dependencies.forEach((dep) => {
+          edges.push({
+            id: `${host.ip}-${dep.targetIp}-${dep.service}`,
+            source: host.ip,
+            target: dep.targetIp,
+            label: dep.service,
+            type: "default",
+            animated: true,
+            style: { stroke: "hsl(var(--primary))", strokeWidth: 2 },
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              color: "hsl(var(--primary))",
+            },
+            labelStyle: {
+              fill: "hsl(var(--foreground))",
+              fontSize: 12,
+              fontWeight: 500,
+            },
+            labelBgStyle: {
+              fill: "hsl(var(--background))",
+              fillOpacity: 0.9,
+            },
+          });
+        });
+      }
+    });
+
+    return { nodes, edges };
+  }, [hosts]);
+
+  const [networkNodes, setNetworkNodes, onNetworkNodesChange] = useNodesState(networkInitialNodes);
+  const [networkEdges, setNetworkEdges, onNetworkEdgesChange] = useEdgesState(networkInitialEdges);
+
+  const onNetworkNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
+    const hostData = node.data as { label: React.ReactNode; host: HostState };
+    setSelectedHost(hostData.host);
+  }, []);
+
+  if (isLoadingSuggestions || isLoadingHosts) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-muted-foreground">Loading vulnerability graph...</p>
+        <p className="text-muted-foreground">Loading graphs...</p>
       </div>
     );
   }
@@ -238,10 +348,105 @@ export default function Graph() {
           )}
         </TabsContent>
 
-        <TabsContent value="network" className="flex-1 m-0">
-          <div className="flex items-center justify-center h-full">
-            <p className="text-muted-foreground text-lg">Network state graph coming soon</p>
+        <TabsContent value="network" className="flex-1 m-0 flex">
+          <div className="flex-1 relative">
+            <ReactFlow
+              nodes={networkNodes}
+              edges={networkEdges}
+              onNodesChange={onNetworkNodesChange}
+              onEdgesChange={onNetworkEdgesChange}
+              onNodeClick={onNetworkNodeClick}
+              fitView
+              minZoom={0.1}
+              maxZoom={2}
+            >
+              <Background />
+              <Controls />
+              <MiniMap
+                nodeColor={(node) => {
+                  const nodeData = node.data as { label: React.ReactNode; host: HostState };
+                  const tier = nodeData?.host?.tier;
+                  return getTierColor(tier);
+                }}
+                style={{
+                  background: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
+                }}
+              />
+            </ReactFlow>
           </div>
+
+          {selectedHost && (
+            <Card className="w-96 m-4 p-6 space-y-4 overflow-y-auto">
+              <div className="flex items-start justify-between">
+                <h3 className="text-lg font-semibold pr-8">{selectedHost.label || selectedHost.ip}</h3>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 -mt-1"
+                  onClick={() => setSelectedHost(null)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <div className="space-y-3 text-sm">
+                <div>
+                  <span className="font-medium">IP:</span>{" "}
+                  <span className="text-muted-foreground">{selectedHost.ip}</span>
+                </div>
+
+                {selectedHost.tier && (
+                  <div>
+                    <span className="font-medium">Tier:</span>{" "}
+                    <Badge className={getTierBadge(selectedHost.tier).class}>
+                      {getTierBadge(selectedHost.tier).label}
+                    </Badge>
+                  </div>
+                )}
+
+                {selectedHost.status && (
+                  <div>
+                    <span className="font-medium">Status:</span>{" "}
+                    <Badge 
+                      variant="outline" 
+                      className={selectedHost.status === "online" ? "border-green-500 text-green-500" : "border-destructive text-destructive"}
+                    >
+                      {selectedHost.status}
+                    </Badge>
+                  </div>
+                )}
+
+                {selectedHost.lastSeen && (
+                  <div className="text-xs text-muted-foreground">
+                    Last seen: {new Date(selectedHost.lastSeen).toLocaleString()}
+                  </div>
+                )}
+
+                {selectedHost.dependencies && selectedHost.dependencies.length > 0 && (
+                  <div>
+                    <span className="font-medium">Dependencies:</span>
+                    <div className="mt-2 space-y-1">
+                      {selectedHost.dependencies.map((dep, idx) => (
+                        <div key={idx} className="text-xs p-2 bg-muted rounded">
+                          <span className="font-medium">{dep.service}</span> → {dep.targetIp}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {selectedHost.state && Object.keys(selectedHost.state).length > 0 && (
+                  <div>
+                    <span className="font-medium">State:</span>
+                    <pre className="mt-1 p-2 bg-muted rounded text-xs overflow-x-auto max-h-64">
+                      {JSON.stringify(selectedHost.state, null, 2)}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
     </div>

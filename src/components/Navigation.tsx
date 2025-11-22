@@ -9,7 +9,7 @@ export const Navigation = () => {
           <div className="flex items-center gap-8">
             <div className="flex items-center gap-2">
               <Shield className="h-6 w-6 text-primary" />
-              <span className="text-xl font-semibold">Splitstream</span>
+              <span className="text-xl font-semibold">Slipstream</span>
             </div>
             
             <div className="flex gap-1">

@@ -26,7 +26,7 @@ export default function Chat() {
 
   const { data: messages } = useQuery({
     queryKey: ["chat"],
-    queryFn: fetchChatHistory,
+    queryFn: () => fetchChatHistory(),
   });
 
   const sendMutation = useMutation({

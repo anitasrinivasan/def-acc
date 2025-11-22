@@ -38,32 +38,22 @@ export async function fetchState(): Promise<HostState[]> {
 }
 
 export async function fetchSuggestions(ip?: string): Promise<Suggestion[]> {
-  let query = supabase
-    .from('suggestions')
-    .select('*')
-    .order('created_at', { ascending: false });
+  const filter = ip ? `&ip=eq.${encodeURIComponent(ip)}` : "";
+  const rows = (await sbFetch(`/suggestions?select=*${filter}`)) as any[];
 
-  if (ip) {
-    query = query.eq('ip', ip);
-  }
-
-  const { data, error } = await query;
-
-  if (error) {
-    console.error('Error fetching suggestions:', error);
-    throw error;
-  }
-
-  return (data || []).map(suggestion => ({
-    id: suggestion.id,
-    ip: suggestion.ip,
-    title: suggestion.title,
-    description: suggestion.description || '',
-    severity: suggestion.severity || 0,
-    suggestedCommand: suggestion.suggested_command || undefined,
-    createdAt: suggestion.created_at,
-    status: suggestion.status as Suggestion['status'],
-    dependencies: (suggestion.dependencies as SuggestionDependency[]) || [],
+  return rows.map((row) => ({
+    id: row.id,
+    ip: row.ip,
+    title: row.title,
+    description: row.description,
+    severity: row.severity,
+    suggestedCommand: row.suggested_command ?? undefined,
+    createdAt: row.created_at,
+    status: row.status,
+    dependencies: (row.dependencies_json || []).map((d: any) => ({
+      targetSuggestionId: d.targetSuggestionId,
+      relation: d.relation,
+    })),
   }));
 }
 

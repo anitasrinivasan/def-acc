@@ -65,4 +65,22 @@ All colors MUST be HSL.
   code, pre, .font-mono {
     font-family: "JetBrains Mono", "Fira Code", "Consolas", monospace;
   }
+
+  /* React Flow Controls styling */
+  .react-flow__controls {
+    @apply shadow-lg;
+  }
+
+  .react-flow__controls-button {
+    @apply bg-card border-border text-foreground;
+    @apply hover:bg-muted transition-colors;
+  }
+
+  .react-flow__controls-button:hover {
+    @apply bg-primary/20;
+  }
+
+  .react-flow__controls-button svg {
+    @apply fill-foreground;
+  }
 }

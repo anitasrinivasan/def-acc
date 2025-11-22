@@ -277,7 +277,7 @@ export default function Graph() {
               maxZoom={2}
             >
               <Background />
-              <Controls />
+              <Controls className="slipstream-reactflow-controls" />
               <MiniMap
                 nodeColor={(node) => {
                   const nodeData = node.data as { label: React.ReactNode; suggestion: Suggestion };
@@ -375,7 +375,7 @@ export default function Graph() {
               maxZoom={2}
             >
               <Background />
-              <Controls />
+              <Controls className="slipstream-reactflow-controls" />
               <MiniMap
                 nodeColor={(node) => {
                   const nodeData = node.data as { label: React.ReactNode; host: HostState };

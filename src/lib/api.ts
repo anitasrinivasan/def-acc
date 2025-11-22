@@ -2,6 +2,27 @@
 import { supabase } from "@/integrations/supabase";
 import { HostState, Suggestion, ChatMessage, Dependency, SuggestionDependency } from "@/types";
 
+const SUPABASE_URL = "https://uqdnprxlzlqzgwsajnkk.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxZG5wcnhsemxxemd3c2FqbmtrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM4MzA0ODEsImV4cCI6MjA3OTQwNjQ4MX0.I5wHhjdmPNTkjmHttKwjNkTBoS39aFlhF-M7e7rRn-8";
+
+async function sbFetch(path: string, options: RequestInit = {}) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, {
+    ...options,
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Supabase error ${res.status}: ${text}`);
+  }
+  return res.json();
+}
+
 export async function fetchState(): Promise<HostState[]> {
   const { data, error } = await supabase
     .from('hosts')

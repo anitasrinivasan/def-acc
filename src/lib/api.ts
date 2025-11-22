@@ -12,7 +12,16 @@ const mockHosts: HostState[] = [
     status: "online",
     lastSeen: new Date().toISOString(),
     dependencies: [{ targetIp: "10.0.1.200", service: "DB" }],
-    state: { cpu: 28, memory: 54, connections: 142 },
+    state: {
+      services: {
+        IIS: { version: "10.0", notes: "example only" },
+        flask: { debug: false, port: 5000 }
+      },
+      users: {
+        admins: ["alice", "bob"],
+        regular: ["charlie"]
+      }
+    },
   },
   {
     ip: "10.0.1.200",

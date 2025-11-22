@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 const getSeverityColor = (severity: number) => {
   if (severity >= 8) return "hsl(var(--destructive))";
@@ -121,101 +122,128 @@ export default function Graph() {
   }
 
   return (
-    <div className="h-screen flex">
-      <div className="flex-1 relative">
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onNodeClick={onNodeClick}
-          fitView
-          minZoom={0.1}
-          maxZoom={2}
-        >
-          <Background />
-          <Controls />
-          <MiniMap
-            nodeColor={(node) => {
-              const nodeData = node.data as { label: React.ReactNode; suggestion: Suggestion };
-              const severity = nodeData?.suggestion?.severity || 0;
-              return getSeverityColor(severity);
-            }}
-            style={{
-              background: "hsl(var(--card))",
-              border: "1px solid hsl(var(--border))",
-            }}
-          />
-        </ReactFlow>
-      </div>
-
-      {selectedSuggestion && (
-        <Card className="w-96 m-4 p-6 space-y-4 overflow-y-auto">
-          <div className="flex items-start justify-between">
-            <h3 className="text-lg font-semibold pr-8">{selectedSuggestion.title}</h3>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 -mt-1"
-              onClick={() => setSelectedSuggestion(null)}
+    <div className="h-screen flex flex-col">
+      <Tabs defaultValue="vulnerabilities" className="flex-1 flex flex-col">
+        <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <TabsList className="w-full justify-start rounded-none border-b-0 bg-transparent p-0 h-auto">
+            <TabsTrigger 
+              value="vulnerabilities"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-3"
             >
-              <X className="h-4 w-4" />
-            </Button>
+              Vulnerabilities
+            </TabsTrigger>
+            <TabsTrigger 
+              value="network"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-3"
+            >
+              Network State
+            </TabsTrigger>
+          </TabsList>
+        </div>
+
+        <TabsContent value="vulnerabilities" className="flex-1 m-0 flex">
+          <div className="flex-1 relative">
+            <ReactFlow
+              nodes={nodes}
+              edges={edges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onNodeClick={onNodeClick}
+              fitView
+              minZoom={0.1}
+              maxZoom={2}
+            >
+              <Background />
+              <Controls />
+              <MiniMap
+                nodeColor={(node) => {
+                  const nodeData = node.data as { label: React.ReactNode; suggestion: Suggestion };
+                  const severity = nodeData?.suggestion?.severity || 0;
+                  return getSeverityColor(severity);
+                }}
+                style={{
+                  background: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
+                }}
+              />
+            </ReactFlow>
           </div>
 
-          <div className="space-y-3 text-sm">
-            <div>
-              <span className="font-medium">IP:</span>{" "}
-              <span className="text-muted-foreground">{selectedSuggestion.ip}</span>
-            </div>
-
-            <div>
-              <span className="font-medium">Severity:</span>{" "}
-              <Badge className={getSeverityBadge(selectedSuggestion.severity).class}>
-                {selectedSuggestion.severity}/10 - {getSeverityBadge(selectedSuggestion.severity).label}
-              </Badge>
-            </div>
-
-            <div>
-              <span className="font-medium">Status:</span>{" "}
-              <Badge variant="outline" className="capitalize">
-                {selectedSuggestion.status}
-              </Badge>
-            </div>
-
-            <div>
-              <span className="font-medium">Description:</span>
-              <p className="text-muted-foreground mt-1">{selectedSuggestion.description}</p>
-            </div>
-
-            {selectedSuggestion.suggestedCommand && (
-              <div>
-                <span className="font-medium">Suggested Command:</span>
-                <pre className="mt-1 p-2 bg-muted rounded text-xs overflow-x-auto">
-                  {selectedSuggestion.suggestedCommand}
-                </pre>
+          {selectedSuggestion && (
+            <Card className="w-96 m-4 p-6 space-y-4 overflow-y-auto">
+              <div className="flex items-start justify-between">
+                <h3 className="text-lg font-semibold pr-8">{selectedSuggestion.title}</h3>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 -mt-1"
+                  onClick={() => setSelectedSuggestion(null)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
-            )}
 
-            {selectedSuggestion.dependencies && selectedSuggestion.dependencies.length > 0 && (
-              <div>
-                <span className="font-medium">Dependencies:</span>
-                <div className="mt-2 space-y-1">
-                  {selectedSuggestion.dependencies.map((dep, idx) => (
-                    <div key={idx} className="text-xs p-2 bg-muted rounded">
-                      <span className="capitalize font-medium">{dep.relation}</span> suggestion #{dep.targetSuggestionId}
+              <div className="space-y-3 text-sm">
+                <div>
+                  <span className="font-medium">IP:</span>{" "}
+                  <span className="text-muted-foreground">{selectedSuggestion.ip}</span>
+                </div>
+
+                <div>
+                  <span className="font-medium">Severity:</span>{" "}
+                  <Badge className={getSeverityBadge(selectedSuggestion.severity).class}>
+                    {selectedSuggestion.severity}/10 - {getSeverityBadge(selectedSuggestion.severity).label}
+                  </Badge>
+                </div>
+
+                <div>
+                  <span className="font-medium">Status:</span>{" "}
+                  <Badge variant="outline" className="capitalize">
+                    {selectedSuggestion.status}
+                  </Badge>
+                </div>
+
+                <div>
+                  <span className="font-medium">Description:</span>
+                  <p className="text-muted-foreground mt-1">{selectedSuggestion.description}</p>
+                </div>
+
+                {selectedSuggestion.suggestedCommand && (
+                  <div>
+                    <span className="font-medium">Suggested Command:</span>
+                    <pre className="mt-1 p-2 bg-muted rounded text-xs overflow-x-auto">
+                      {selectedSuggestion.suggestedCommand}
+                    </pre>
+                  </div>
+                )}
+
+                {selectedSuggestion.dependencies && selectedSuggestion.dependencies.length > 0 && (
+                  <div>
+                    <span className="font-medium">Dependencies:</span>
+                    <div className="mt-2 space-y-1">
+                      {selectedSuggestion.dependencies.map((dep, idx) => (
+                        <div key={idx} className="text-xs p-2 bg-muted rounded">
+                          <span className="capitalize font-medium">{dep.relation}</span> suggestion #{dep.targetSuggestionId}
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  </div>
+                )}
+
+                <div className="text-xs text-muted-foreground">
+                  Created: {new Date(selectedSuggestion.createdAt).toLocaleString()}
                 </div>
               </div>
-            )}
+            </Card>
+          )}
+        </TabsContent>
 
-            <div className="text-xs text-muted-foreground">
-              Created: {new Date(selectedSuggestion.createdAt).toLocaleString()}
-            </div>
+        <TabsContent value="network" className="flex-1 m-0">
+          <div className="flex items-center justify-center h-full">
+            <p className="text-muted-foreground text-lg">Network state graph coming soon</p>
           </div>
-        </Card>
-      )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

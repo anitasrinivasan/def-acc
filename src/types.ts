@@ -5,6 +5,11 @@ export type Dependency = {
   service: string;
 };
 
+export type SuggestionDependency = {
+  targetSuggestionId: string;
+  relation: string; // e.g. "enables", "worsens", "blocks", etc.
+};
+
 export type HostState = {
   ip: string;
   label?: string;
@@ -26,6 +31,7 @@ export type Suggestion = {
   suggestedCommand?: string;
   createdAt: string;
   status: SuggestionStatus;
+  dependencies?: SuggestionDependency[];
 };
 
 export type ChatMessageRole = "user" | "agent" | "system";

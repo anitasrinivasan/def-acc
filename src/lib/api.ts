@@ -1,5 +1,4 @@
 // Supabase API layer for Slipstream
-import { supabase } from "@/integrations/supabase";
 import { HostState, Suggestion, ChatMessage, Dependency, SuggestionDependency } from "@/types";
 
 const SUPABASE_URL = "https://uqdnprxlzlqzgwsajnkk.supabase.co";
